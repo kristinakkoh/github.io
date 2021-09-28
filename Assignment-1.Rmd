@@ -1,0 +1,167 @@
+---
+title: "Assignment 1"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+Create bar or line charts showing monthly total kBTUs of residential and commercial electricity and gas consumption for the entire PG&E territory (meaning all ZIP codes in your downloaded files) from January 2017 to the latest available month (meaning a 54-item version of the plots from Chapter 1.8). Look online for the correct conversion of kWhs to kBTUs and therms to kBTUs. Plot residential and commercial trends on separate charts, but each chart should distinguish electricity and gas consumption with different colors. Comment on any observable changes in energy consumption that may be attributable to the COVID-19 pandemic (you are encouraged to create additional plots that help emphasize the change between 2019 and 2020). Explain any key assumptions you made in the analysis, or caveats about the data sources that you think the reader should be aware of. Publish all of this work in a GitHub webpage titled “yourname_A1” (using the steps from Chapter 1.4). For this assignment, a support script is available by request from the TAs.
+
+
+```{r, echo=FALSE,warning=FALSE, message=FALSE}
+library(tidyverse)
+library(readr)
+pge_17_q1_elec <- read_csv("PGE_2017_Q1_ElectricUsageByZip.csv")
+pge_17_q2_elec <- read_csv("PGE_2017_Q2_ElectricUsageByZip.csv")
+pge_17_q3_elec <- read_csv("PGE_2017_Q3_ElectricUsageByZip.csv")
+pge_17_q4_elec <- read_csv("PGE_2017_Q4_ElectricUsageByZip.csv")
+pge_17_q1_gas <- read_csv("PGE_2017_Q1_GasUsageByZip.csv")
+pge_17_q2_gas <- read_csv("PGE_2017_Q2_GasUsageByZip.csv")
+pge_17_q3_gas <- read_csv("PGE_2017_Q3_GasUsageByZip.csv")
+pge_17_q4_gas <- read_csv("PGE_2017_Q4_GasUsageByZip.csv")
+pge_18_q1_elec <- read_csv("PGE_2018_Q1_ElectricUsageByZip.csv")
+pge_18_q2_elec <- read_csv("PGE_2018_Q2_ElectricUsageByZip.csv")
+pge_18_q3_elec <- read_csv("PGE_2018_Q3_ElectricUsageByZip.csv")
+pge_18_q4_elec <- read_csv("PGE_2018_Q4_ElectricUsageByZip.csv")
+pge_18_q1_gas <- read_csv("PGE_2018_Q1_GasUsageByZip.csv")
+pge_18_q2_gas <- read_csv("PGE_2018_Q2_GasUsageByZip.csv")
+pge_18_q3_gas <- read_csv("PGE_2018_Q3_GasUsageByZip.csv")
+pge_18_q4_gas <- read_csv("PGE_2018_Q4_GasUsageByZip.csv")
+pge_19_q1_elec <- read_csv("PGE_2019_Q1_ElectricUsageByZip.csv")
+pge_19_q2_elec <- read_csv("PGE_2019_Q2_ElectricUsageByZip.csv")
+pge_19_q3_elec <- read_csv("PGE_2019_Q3_ElectricUsageByZip.csv")
+pge_19_q4_elec <- read_csv("PGE_2019_Q4_ElectricUsageByZip.csv")
+pge_19_q1_gas <- read_csv("PGE_2019_Q1_GasUsageByZip.csv")
+pge_19_q2_gas <- read_csv("PGE_2019_Q2_GasUsageByZip.csv")
+pge_19_q3_gas <- read_csv("PGE_2019_Q3_GasUsageByZip.csv")
+pge_19_q4_gas <- read_csv("PGE_2019_Q4_GasUsageByZip.csv")
+pge_20_q1_elec <- read_csv("PGE_2020_Q1_ElectricUsageByZip.csv")
+pge_20_q2_elec <- read_csv("PGE_2020_Q2_ElectricUsageByZip.csv")
+pge_20_q3_elec <- read_csv("PGE_2020_Q3_ElectricUsageByZip.csv")
+pge_20_q4_elec <- read_csv("PGE_2020_Q4_ElectricUsageByZip.csv")
+pge_20_q1_gas <- read_csv("PGE_2020_Q1_GasUsageByZip.csv")
+pge_20_q2_gas <- read_csv("PGE_2020_Q2_GasUsageByZip.csv")
+pge_20_q3_gas <- read_csv("PGE_2020_Q3_GasUsageByZip.csv")
+pge_20_q4_gas <- read_csv("PGE_2020_Q4_GasUsageByZip.csv")
+pge_21_q1_elec <- read_csv("PGE_2021_Q1_ElectricUsageByZip.csv")
+pge_21_q2_elec <- read_csv("PGE_2021_Q2_ElectricUsageByZip.csv")
+pge_21_q1_gas <- read_csv("PGE_2021_Q1_GasUsageByZip.csv")
+pge_21_q2_gas <- read_csv("PGE_2021_Q2_GasUsageByZip.csv")
+
+year <- 2017:2020
+quarters <- 1:4
+type <- "Electric"
+pge_all_elec <- NULL
+quarter <- 1
+for(quarter in quarters) {
+  filename <- paste0("PGE_",year,"_Q",quarter,"_",type,"UsageByZip.csv")
+
+  print(filename)
+  
+  temp <- read_csv(filename)
+  
+  pge_all_elec <- rbind(pge_all_elec,temp)
+  # Note rbind requires field names to be consistent for every new thing that you add.
+
+  saveRDS(pge_all_elec, "pge_all_elec.rds")
+  
+}
+pge_all_elec<-rbind(pge_all_elec,pge_21_q1_elec)
+pge_all_elec<-rbind(pge_all_elec,pge_21_q2_elec)
+
+pge_all_elec$Date <- with(pge_all_elec, sprintf("%d-%02d", pge_all_elec$YEAR, pge_all_elec$MONTH))
+
+pge_filter <- filter(pge_all_elec, CUSTOMERCLASS %in% c("Elec- Residential","Elec- Commercial"))
+pge_elec_btu <-
+  pge_all_elec %>% 
+  filter(CUSTOMERCLASS %in% c("Elec- Residential","Elec- Commercial")
+  ) %>% 
+  select(-c(YEAR, COMBINED, AVERAGEKWH)) %>% 
+  group_by(Date, CUSTOMERCLASS) %>% 
+  summarize(TOTALKWH = sum(TOTALKWH, na.rm = T),
+    TOTALCUSTOMERS =sum(TOTALCUSTOMERS,na.rm = T)
+  ) %>% 
+  mutate(TOTALKBTU =TOTALKWH*3.412)
+
+##NOW WE DO IT AGAIN FOR GAS
+year <- 2017:2020
+quarters <- 1:4
+type <- "Gas"
+pge_all_gas <- NULL
+quarter <- 1
+for(quarter in quarters) {
+  filename <- paste0("PGE_",year,"_Q",quarter,"_",type,"UsageByZip.csv")
+
+  print(filename)
+  
+  temp <- read_csv(filename)
+  
+  pge_all_gas <- rbind(pge_all_gas,temp)
+
+  saveRDS(pge_all_gas, "pge_all_gas.rds")
+  
+}
+pge_all_gas<-rbind(pge_all_gas,pge_21_q1_gas)
+pge_all_gas<-rbind(pge_all_gas,pge_21_q2_gas)
+
+pge_all_gas$Date <- with(pge_all_gas, sprintf("%d-%02d", pge_all_gas$YEAR, pge_all_gas$MONTH))
+
+pge_filter <- filter(pge_all_gas, CUSTOMERCLASS %in% c("Gas- Residential","Gas- Commercial"))
+
+pge_gas_btu <-
+  pge_all_gas %>% 
+  filter(CUSTOMERCLASS %in% c("Gas- Residential","Gas- Commercial")
+  ) %>% 
+  select(-c(YEAR, COMBINED, AVERAGETHM)) %>% 
+  group_by(Date, CUSTOMERCLASS) %>% 
+  summarize(TOTALTHM = sum(TOTALTHM, na.rm = T),
+    TOTALCUSTOMERS =sum(TOTALCUSTOMERS,na.rm = T)
+  ) %>% 
+  mutate(TOTALKBTUgas =TOTALTHM*99.9761)
+
+##END OF GAS
+
+#let's try putting them together
+
+library(plotly)
+
+reselec <- subset(pge_elec_btu,CUSTOMERCLASS=="Elec- Residential")
+resgas <-subset(pge_gas_btu,CUSTOMERCLASS=="Gas- Residential")
+comelec <-subset(pge_elec_btu,CUSTOMERCLASS=="Elec- Commercial")
+comgas<-subset(pge_gas_btu,CUSTOMERCLASS=="Gas- Commercial")
+
+pge_chart <-
+  ggplot() +
+  geom_bar(aes(x = reselec$Date %>% factor(),y = reselec$TOTALKBTU+resgas$TOTALKBTUgas,fill = "Elec - Residential"),stat="identity")+
+  geom_bar(aes(x = resgas$Date %>% factor(),y = resgas$TOTALKBTUgas,fill = "Gas - Residential"),stat="identity")+
+  stat_summary(position="stack", geom="bar")+
+  labs(
+    x = "Month",
+    y = "kbtu",
+    title = "PG&E Territory Monthly Electricity and Gas Usage, 2017-2021",
+    fill = "Energy Type"
+  )
+
+pge_chart2 <-
+  ggplot() +
+  geom_bar(aes(x = comelec$Date %>% factor(),y = comelec$TOTALKBTU+comgas$TOTALKBTUgas,fill = "Elec - Commercial"),stat="identity")+
+  geom_bar(aes(x = comgas$Date %>% factor(),y = comgas$TOTALKBTUgas,fill = "Gas - Commercial"),stat="identity")+
+  stat_summary(position="stack", geom="bar")+
+  labs(
+    x = "Month",
+    y = "kbtu",
+    title = "PG&E Territory Monthly Electricity and Gas Usage, 2017-2021",
+    fill = "Energy Type"
+  )
+
+```
+```{r plots, echo=FALSE}
+pge_chart
+pge_chart2
+```
+
+## Including Plots
+
